@@ -1,0 +1,690 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>The Youth's Wikipedia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: plain Wikipedia-style page, centred masthead with logo, search/write/settings bar, then a grid of rounded square article tabs. Tapping a tab opens the full article with photo and comments. Two themes: normal (white/black) and dark. */
+:root {
+  color-scheme: light;
+  --page: #ffffff;
+  --paper: #ffffff;
+  --ink: #000000;
+  --muted: #333333;
+  --rule: #000000;
+  --soft: #eeeeee;
+  --link: #000000;
+  --link-visited: #000000;
+  --tab: #ffffff;
+  --tab-hover: #eeeeee;
+  --accent-bg: #000000;
+  --accent-ink: #ffffff;
+  --danger: #000000;
+  --serif: "Times New Roman", Times, serif;
+  --sans: "Times New Roman", Times, serif;
+}
+:root[data-ywtheme="dark"] {
+  color-scheme: dark;
+  --page: #0e0e0e;
+  --paper: #0e0e0e;
+  --ink: #f2f2f2;
+  --muted: #c4c4c4;
+  --rule: #9a9a9a;
+  --soft: #242424;
+  --link: #ffffff;
+  --link-visited: #ffffff;
+  --tab: #161616;
+  --tab-hover: #262626;
+  --accent-bg: #f2f2f2;
+  --accent-ink: #0e0e0e;
+  --danger: #ff9b9b;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+  padding-block: 16px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; }
+.paper { background: var(--paper); padding: 8px 0 28px; }
+a, .linkish { color: var(--link); text-decoration: underline; }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+/* Masthead */
+.mast { border-bottom: 1px solid var(--rule); padding-bottom: 12px; margin-bottom: 6px; text-align: center; }
+.brand { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.logo { width: clamp(44px, 11vw, 64px); height: auto; flex: none; }
+.mast h1 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(30px, 8vw, 46px);
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+}
+.mast h1 i { font-style: italic; }
+.mast p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+/* Toolbar */
+.bar { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; align-items: center; }
+.bar .search { flex: 1 1 200px; min-width: 0; }
+input[type="text"], input[type="search"], textarea {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 8px 10px;
+}
+textarea { min-height: 280px; resize: vertical; line-height: 1.6; }
+textarea.ctext { min-height: 90px; }
+.btn {
+  border: 1px solid var(--rule);
+  background: var(--tab);
+  border-radius: 2px;
+  padding: 8px 14px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.btn:hover { background: var(--soft); }
+.btn.primary { background: var(--accent-bg); color: var(--accent-ink); border-color: var(--accent-bg); font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.15); }
+.btn.danger { color: var(--danger); }
+.btn.small { min-height: 30px; padding: 3px 10px; font-size: 14px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+
+.count { color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+
+/* Article tabs */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.grid li { min-width: 0; display: flex; }
+.tab {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  background: var(--tab);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.tab:hover { background: var(--tab-hover); }
+.tab:hover .t { text-decoration: underline; }
+.tab .t {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--link);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tab.has-photo .t { -webkit-line-clamp: 2; font-size: 17px; }
+.tab .thumb { flex: 1 1 0; height: 0; min-height: 0; width: 100%; object-fit: cover; border: 1px solid var(--rule); border-radius: 8px; background: var(--soft); display: block; }
+.tab .meta { font-size: 13.5px; color: var(--muted); line-height: 1.4; min-width: 0; }
+.tab .meta b { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+
+.photo { margin: 0 0 18px; }
+.photo img { max-width: 100%; height: auto; display: block; border: 1px solid var(--rule); background: var(--soft); }
+.prev { max-width: 100%; max-height: 240px; display: block; margin: 8px 0; border: 1px solid var(--rule); }
+input[type="file"] { max-width: 100%; }
+
+/* Notices and empty state */
+.note { border: 1px solid var(--rule); background: var(--soft); padding: 10px 12px; margin: 0 0 14px; font-size: 15px; }
+.empty { border: 1px dashed var(--rule); border-radius: 14px; padding: 28px 18px; text-align: center; color: var(--muted); }
+.empty h2 { font-family: var(--serif); font-size: 24px; margin: 0 0 6px; color: var(--ink); }
+.empty p { margin: 0 auto 14px; max-width: 46ch; }
+
+/* Full article */
+.back { margin: 14px 0 10px; }
+article h2.title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(26px, 6.5vw, 34px);
+  line-height: 1.2;
+  margin: 0 0 4px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 6px;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+article .byline { color: var(--muted); font-size: 15px; margin: 8px 0 18px; }
+article .body p { margin: 0 0 1em; max-width: 70ch; overflow-wrap: anywhere; white-space: pre-wrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; align-items: center; }
+
+/* Comments */
+.comments { margin-top: 30px; border-top: 1px solid var(--rule); padding-top: 4px; }
+.comments h3 { font-family: var(--serif); font-size: 24px; font-weight: 400; margin: 14px 0 10px; }
+.comment { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; background: var(--tab); }
+.comment .chead { font-size: 14.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; justify-content: space-between; }
+.comment .chead b { color: var(--ink); }
+.comment p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cempty { color: var(--muted); margin: 0 0 12px; }
+.cform { margin-top: 14px; }
+
+/* Forms and settings */
+form h2, .settings h2 { font-family: var(--serif); font-weight: 400; font-size: 28px; margin: 14px 0 12px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+.field { margin: 0 0 14px; }
+.field label { display: block; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.field .hint { color: var(--muted); font-size: 14px; margin-top: 3px; }
+.err { color: var(--danger); font-size: 15px; margin: 8px 0 0; min-height: 1.2em; }
+fieldset { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+legend { font-weight: 700; padding: 0; margin-bottom: 8px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; margin: 0 0 8px; cursor: pointer; background: var(--tab); }
+.opt input { margin-top: 5px; width: 18px; height: 18px; accent-color: var(--accent-bg); flex: none; }
+.opt small { display: block; color: var(--muted); font-size: 14px; }
+
+footer { margin-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .tab { transition: background .12s; } }
+</style>
+
+<div class="wrap">
+  <div class="paper">
+    <header class="mast">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="The Youth's Wikipedia logo">
+          <circle cx="32" cy="32" r="30" fill="var(--accent-bg)"/>
+          <circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-ink)" stroke-width="1.5"/>
+          <path d="M32 7.5l2.1 5.1 5.5.4-4.2 3.6 1.3 5.4-4.7-2.9-4.7 2.9 1.3-5.4-4.2-3.6 5.5-.4z" fill="var(--accent-ink)"/>
+          <text x="32" y="48" text-anchor="middle" font-family="Times New Roman, Times, serif" font-style="italic" font-weight="700" font-size="32" fill="var(--accent-ink)">Y</text>
+        </svg>
+        <h1>The <i>Youth's</i> Wikipedia</h1>
+      </div>
+      <p>The free encyclopedia that young people write themselves.</p>
+    </header>
+    <main id="app" aria-live="polite"></main>
+  </div>
+  <footer>Free to read. Free to write. Articles are posted by their writers.</footer>
+</div>
+
+<script>
+(function () {
+  var app = document.getElementById("app");
+  var state = { view: "list", openId: null, query: "", articles: [], status: "loading", canWrite: null, myId: null, isAdmin: false, confirmDelete: false, local: false, theme: "light" };
+  var db = null, unsubArticles = null;
+  var savedWriter = "";
+  try { savedWriter = localStorage.getItem("yw_writer") || ""; } catch (e) {}
+
+  /* Logo as the browser tab icon, and a viewport tag when this file is opened on its own */
+  try {
+    var icoSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#000"/><circle cx="32" cy="32" r="26" fill="none" stroke="#fff" stroke-width="2"/><path d="M32 7.5l2.1 5.1 5.5.4-4.2 3.6 1.3 5.4-4.7-2.9-4.7 2.9 1.3-5.4-4.2-3.6 5.5-.4z" fill="#fff"/><text x="32" y="48" text-anchor="middle" font-family="Times New Roman,Times,serif" font-style="italic" font-weight="700" font-size="32" fill="#fff">Y</text></svg>';
+    var ico = document.createElement("link");
+    ico.rel = "icon"; ico.type = "image/svg+xml";
+    ico.href = "data:image/svg+xml," + encodeURIComponent(icoSvg);
+    document.head.appendChild(ico);
+    if (!document.querySelector('meta[name="viewport"]')) {
+      var vp = document.createElement("meta");
+      vp.name = "viewport"; vp.content = "width=device-width, initial-scale=1";
+      document.head.appendChild(vp);
+    }
+  } catch (e) {}
+
+  /* Themes */
+  function applyTheme(t) {
+    state.theme = t === "dark" ? "dark" : "light";
+    document.documentElement.setAttribute("data-ywtheme", state.theme);
+    try { localStorage.setItem("yw_theme", state.theme); } catch (e) {}
+  }
+  try { applyTheme(localStorage.getItem("yw_theme") || "light"); } catch (e) { applyTheme("light"); }
+
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      if (k === "text") el.textContent = attrs[k];
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] != null) el.setAttribute(k, attrs[k] === true ? "" : attrs[k]);
+    }
+    (kids || []).forEach(function (c) { if (c) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return el;
+  }
+  function fmtDate(ms) {
+    if (!ms) return "";
+    try { return new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }); }
+    catch (e) { return ""; }
+  }
+  function go(view, id) {
+    state.view = view; state.openId = id || null; state.confirmDelete = false;
+    render(); window.scrollTo(0, 0);
+  }
+  function noop() {}
+  function safeImg(u) { return typeof u === "string" && u.indexOf("data:image/") === 0; }
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  /* Storage that works when this file is opened on its own: same calls as the shared store, kept in this browser only */
+  function makeLocal() {
+    var KEY = "yw_local_v2", listeners = [];
+    function read() { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { return {}; } }
+    function write(d) {
+      try { localStorage.setItem(KEY, JSON.stringify(d)); }
+      catch (e) { throw { code: "quota_exceeded" }; }
+      listeners.slice().forEach(function (f) { f(); });
+    }
+    function snapOf(id, data) { return { id: id, exists: !!data, data: function () { return data; } }; }
+    function docRef(path) {
+      var parts = path.split("/"), id = parts.pop(), col = parts.join("/");
+      return {
+        id: id, path: path,
+        get: function () { return Promise.resolve(snapOf(id, (read()[col] || {})[id])); },
+        set: function (v) {
+          return new Promise(function (res, rej) {
+            try { var d = read(); (d[col] = d[col] || {})[id] = v; write(d); res(); } catch (e) { rej(e); }
+          });
+        },
+        delete: function () {
+          return new Promise(function (res, rej) {
+            try { var d = read(); if (d[col]) delete d[col][id]; write(d); res(); } catch (e) { rej(e); }
+          });
+        }
+      };
+    }
+    function query(col, ord, dir, lim) {
+      function compute() {
+        var m = read()[col] || {};
+        var docs = Object.keys(m).map(function (i) { return snapOf(i, m[i]); });
+        if (ord) docs.sort(function (a, b) {
+          var x = a.data()[ord], y = b.data()[ord];
+          return (x > y ? 1 : x < y ? -1 : 0) * (dir === "desc" ? -1 : 1);
+        });
+        if (lim) docs = docs.slice(0, lim);
+        return { docs: docs, size: docs.length, empty: !docs.length };
+      }
+      return {
+        orderBy: function (f, d) { return query(col, f, d || "asc", lim); },
+        limit: function (n) { return query(col, ord, dir, n); },
+        get: function () { return Promise.resolve(compute()); },
+        onSnapshot: function (next) {
+          var run = function () { next(compute()); };
+          listeners.push(run); setTimeout(run, 0);
+          return function () { var i = listeners.indexOf(run); if (i > -1) listeners.splice(i, 1); };
+        }
+      };
+    }
+    return {
+      doc: docRef,
+      collection: function (col) {
+        var q = query(col, null, "asc", 0);
+        q.doc = function (id) { return docRef(col + "/" + (id || newId())); };
+        return q;
+      }
+    };
+  }
+
+  /* Photos */
+  function loadImage(file) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file);
+      var im = new Image();
+      im.onload = function () { URL.revokeObjectURL(url); res(im); };
+      im.onerror = function () { URL.revokeObjectURL(url); rej(new Error("bad image")); };
+      im.src = url;
+    });
+  }
+  function makeJpeg(im, max, square, q) {
+    var iw = im.naturalWidth, ih = im.naturalHeight;
+    var c = document.createElement("canvas");
+    var x = c.getContext("2d");
+    if (square) {
+      var s = Math.min(iw, ih);
+      c.width = max; c.height = max;
+      x.fillStyle = "#fff"; x.fillRect(0, 0, max, max);
+      x.drawImage(im, (iw - s) / 2, (ih - s) / 2, s, s, 0, 0, max, max);
+    } else {
+      var k = Math.min(1, max / Math.max(iw, ih));
+      c.width = Math.max(1, Math.round(iw * k)); c.height = Math.max(1, Math.round(ih * k));
+      x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(im, 0, 0, c.width, c.height);
+    }
+    return c.toDataURL("image/jpeg", q);
+  }
+  function prepare(im) {
+    var sizes = [1000, 800, 640, 480], full = "";
+    for (var i = 0; i < sizes.length; i++) {
+      full = makeJpeg(im, sizes[i], false, 0.8);
+      if (full.length < 190000) break;
+    }
+    if (full.length >= 190000) throw new Error("too big");
+    return { full: full, thumb: makeJpeg(im, 300, true, 0.7) };
+  }
+  var photoCache = {};
+
+  /* Comments on the open article */
+  var cm = { id: null, unsub: null, list: [], el: null };
+  var draft = { id: null, text: "" };
+  function stopComments() { if (cm.unsub) cm.unsub(); cm.unsub = null; cm.id = null; cm.list = []; cm.el = null; }
+  function watchComments(id) {
+    if (cm.id === id || !db) return;
+    stopComments(); cm.id = id;
+    cm.unsub = db.collection("articles/" + id + "/comments").orderBy("createdAt", "asc").limit(300).onSnapshot(function (snap) {
+      cm.list = snap.docs.map(function (d) {
+        var x = d.data() || {};
+        return { id: d.id, writer: String(x.writer || "Anonymous"), text: String(x.text || ""), authorId: x.authorId || "", createdAt: Number(x.createdAt) || 0 };
+      });
+      paintComments();
+    }, noop);
+  }
+  function paintComments() {
+    var el = cm.el;
+    if (!el) return;
+    el.textContent = "";
+    if (!cm.list.length) { el.appendChild(h("p", { class: "cempty", text: "No comments yet. Be the first to share an opinion." })); return; }
+    cm.list.forEach(function (c) {
+      var head = h("div", { class: "chead" }, [h("span", null, [h("b", { text: c.writer }), " · " + fmtDate(c.createdAt)])]);
+      if ((state.myId && c.authorId === state.myId) || state.isAdmin) {
+        var armed = false;
+        var del = h("button", { class: "btn small danger", type: "button", text: "Delete" });
+        del.addEventListener("click", function () {
+          if (!armed) { armed = true; del.textContent = "Confirm delete"; return; }
+          db.doc("articles/" + cm.id + "/comments/" + c.id).delete().catch(function () { armed = false; del.textContent = "Delete"; });
+        });
+        head.appendChild(del);
+      }
+      el.appendChild(h("div", { class: "comment" }, [head, h("p", { text: c.text })]));
+    });
+  }
+
+  /* Views */
+  function renderList() {
+    var frag = document.createDocumentFragment();
+    var bar = h("div", { class: "bar" });
+    var search = h("input", { type: "search", id: "q", class: "search", placeholder: "Search articles or writers", "aria-label": "Search articles or writers", value: state.query });
+    search.addEventListener("input", function () {
+      state.query = search.value;
+      var pos = search.selectionStart;
+      render();
+      var again = document.getElementById("q");
+      if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
+    });
+    bar.appendChild(search);
+    bar.appendChild(h("button", { class: "btn primary", type: "button", onclick: function () { go("write"); } }, ["Write an article"]));
+    bar.appendChild(h("button", { class: "btn", type: "button", onclick: function () { go("settings"); } }, ["Settings"]));
+    frag.appendChild(bar);
+
+    if (state.local) {
+      frag.appendChild(h("p", { class: "note", text: "This copy is not connected to the shared site, so articles you write here are saved on this device only. Open the published link to share articles with everyone." }));
+    } else if (state.status === "unavailable") {
+      frag.appendChild(h("p", { class: "note", text: "Articles could not be loaded in this view. Sign in to read and write articles." }));
+    } else if (state.canWrite === false) {
+      frag.appendChild(h("p", { class: "note", text: "You can read every article here. Writing needs contributor access, which the page owner can give you from the share menu." }));
+    }
+
+    var q = state.query.trim().toLowerCase();
+    var list = state.articles.filter(function (a) {
+      return !q || (a.title + " " + a.writer).toLowerCase().indexOf(q) !== -1;
+    });
+
+    if (state.status === "loading") {
+      frag.appendChild(h("p", { class: "count", text: "Loading articles..." }));
+    } else if (!state.articles.length) {
+      frag.appendChild(h("div", { class: "empty" }, [
+        h("h2", { text: "No articles yet" }),
+        h("p", { text: "This encyclopedia is waiting for its first entry. Pick a topic you know well and write about it." }),
+        h("button", { class: "btn primary", type: "button", onclick: function () { go("write"); } }, ["Write the first article"])
+      ]));
+    } else if (!list.length) {
+      frag.appendChild(h("p", { class: "count", text: "No articles match “" + state.query + "”." }));
+    } else {
+      frag.appendChild(h("p", { class: "count", text: list.length + (list.length === 1 ? " article" : " articles") + ", newest first" }));
+      var ul = h("ul", { class: "grid" });
+      list.forEach(function (a) {
+        var btn = h("button", { class: "tab" + (a.thumb ? " has-photo" : ""), type: "button", onclick: function () { go("read", a.id); } }, [
+          a.thumb ? h("img", { class: "thumb", src: a.thumb, alt: "" }) : null,
+          h("span", { class: "t", text: a.title }),
+          h("span", { class: "meta" }, [
+            h("b", { text: a.writer }), h("br"), h("span", { text: fmtDate(a.createdAt) })
+          ])
+        ]);
+        ul.appendChild(h("li", null, [btn]));
+      });
+      frag.appendChild(ul);
+    }
+    return frag;
+  }
+
+  function renderRead() {
+    var a = state.articles.filter(function (x) { return x.id === state.openId; })[0];
+    var frag = document.createDocumentFragment();
+    frag.appendChild(h("div", { class: "back" }, [
+      h("button", { class: "btn", type: "button", onclick: function () { go("list"); } }, ["← All articles"])
+    ]));
+    if (!a) {
+      frag.appendChild(h("p", { class: "note", text: state.status === "loading" ? "Loading article..." : "This article is no longer available." }));
+      return frag;
+    }
+    var body = h("div", { class: "body" });
+    String(a.body).split(/\n{2,}/).forEach(function (p) { if (p.trim()) body.appendChild(h("p", { text: p.trim() })); });
+    var fig = null;
+    if (a.thumb) {
+      var im = h("img", { alt: a.title, src: photoCache[a.id] || a.thumb });
+      fig = h("figure", { class: "photo" }, [im]);
+      if (!photoCache[a.id] && db) {
+        db.doc("photos/" + a.id).get().then(function (snap) {
+          var d = snap.exists && snap.data();
+          if (d && safeImg(d.data)) { photoCache[a.id] = d.data; im.src = d.data; }
+        }, noop);
+      }
+    }
+    var art = h("article", null, [
+      h("h2", { class: "title", text: a.title }),
+      h("p", { class: "byline" }, ["Written by ", h("b", { text: a.writer }), " on " + fmtDate(a.createdAt)]),
+      fig,
+      body
+    ]);
+    var mine = state.myId && a.authorId === state.myId;
+    if (mine || state.isAdmin) {
+      var actions = h("div", { class: "actions" });
+      if (!state.confirmDelete) {
+        actions.appendChild(h("button", { class: "btn danger", type: "button", onclick: function () { state.confirmDelete = true; render(); } }, ["Delete this article"]));
+      } else {
+        actions.appendChild(h("span", { text: "Delete this article for everyone?" }));
+        actions.appendChild(h("button", { class: "btn danger", type: "button", onclick: function () {
+          db.doc("photos/" + a.id).delete().catch(noop);
+          db.collection("articles/" + a.id + "/comments").get().then(function (s) {
+            s.docs.forEach(function (d) { db.doc("articles/" + a.id + "/comments/" + d.id).delete().catch(noop); });
+          }, noop);
+          db.collection("articles").doc(a.id).delete().then(function () { go("list"); }, function () { state.confirmDelete = false; render(); });
+        } }, ["Yes, delete"]));
+        actions.appendChild(h("button", { class: "btn", type: "button", onclick: function () { state.confirmDelete = false; render(); } }, ["Keep it"]));
+      }
+      art.appendChild(actions);
+    }
+    frag.appendChild(art);
+
+    /* Comments */
+    var sec = h("section", { class: "comments", "aria-label": "Comments" });
+    sec.appendChild(h("h3", { text: "Comments" }));
+    var listEl = h("div", { class: "clist" });
+    sec.appendChild(listEl);
+    cm.el = listEl;
+    watchComments(a.id);
+    paintComments();
+    if (state.canWrite === false) {
+      sec.appendChild(h("p", { class: "note", text: "Commenting needs contributor access, which the page owner can give you from the share menu." }));
+    } else {
+      if (draft.id !== a.id) { draft.id = a.id; draft.text = ""; }
+      var cerr = h("p", { class: "err", role: "alert" });
+      var cname = h("input", { type: "text", id: "c-name", maxlength: "40", placeholder: "Your name or nickname", value: savedWriter });
+      var ctext = h("textarea", { id: "c-text", class: "ctext", maxlength: "2000", placeholder: "Share your opinion on this article" });
+      ctext.value = draft.text;
+      ctext.addEventListener("input", function () { draft.text = ctext.value; });
+      var cbtn = h("button", { class: "btn primary", type: "submit" }, ["Post comment"]);
+      var cform = h("form", { class: "cform", novalidate: true }, [
+        h("div", { class: "field" }, [h("label", { for: "c-name", text: "Your name" }), cname]),
+        h("div", { class: "field" }, [h("label", { for: "c-text", text: "Your comment" }), ctext]),
+        cbtn, cerr
+      ]);
+      cform.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var w = cname.value.trim(), t = ctext.value.trim();
+        if (!w || !t) { cerr.textContent = "Please add your name and a comment."; return; }
+        if (!db) { cerr.textContent = "Comments are not available yet. Try again in a moment."; return; }
+        cbtn.disabled = true; cerr.textContent = "";
+        try { localStorage.setItem("yw_writer", w); savedWriter = w; } catch (e) {}
+        db.collection("articles/" + a.id + "/comments").doc().set({ writer: w, text: t, authorId: state.myId || "", createdAt: Date.now() }).then(function () {
+          draft.text = ""; ctext.value = ""; cbtn.disabled = false;
+        }, function (e) {
+          cbtn.disabled = false;
+          cerr.textContent = (e && e.code === "invalid_argument")
+            ? "You have read-only access here. Ask the page owner for contributor access to comment."
+            : "Could not post your comment. Try again.";
+        });
+      });
+      sec.appendChild(cform);
+    }
+    frag.appendChild(sec);
+    return frag;
+  }
+
+  function renderWrite() {
+    var form = h("form", { novalidate: true });
+    var err = h("p", { class: "err", role: "alert" });
+    var title = h("input", { type: "text", id: "f-title", maxlength: "120", placeholder: "For example: How volcanoes form", required: true });
+    var writer = h("input", { type: "text", id: "f-writer", maxlength: "40", placeholder: "Your name or nickname", value: savedWriter, required: true });
+    var text = h("textarea", { id: "f-body", maxlength: "20000", placeholder: "Write your article here. Leave a blank line between paragraphs.", required: true });
+    var photo = null, busy = false;
+    var fileIn = h("input", { type: "file", id: "f-photo", accept: "image/*" });
+    var prev = h("img", { class: "prev", alt: "Selected photo preview" }); prev.hidden = true;
+    var rm = h("button", { class: "btn", type: "button" }, ["Remove photo"]); rm.hidden = true;
+    rm.addEventListener("click", function () { photo = null; fileIn.value = ""; prev.hidden = true; rm.hidden = true; });
+    fileIn.addEventListener("change", function () {
+      var f = fileIn.files && fileIn.files[0];
+      if (!f) return;
+      if (!/^image\//.test(f.type)) { err.textContent = "Please choose an image file."; fileIn.value = ""; return; }
+      err.textContent = ""; busy = true;
+      loadImage(f).then(function (im) {
+        photo = prepare(im);
+        prev.src = photo.full; prev.hidden = false; rm.hidden = false;
+      }).catch(function () {
+        photo = null; fileIn.value = ""; prev.hidden = true; rm.hidden = true;
+        err.textContent = "That photo could not be used. Try a different image.";
+      }).then(function () { busy = false; });
+    });
+    var submit = h("button", { class: "btn primary", type: "submit" }, ["Publish article"]);
+    form.appendChild(h("h2", { text: "Write an article" }));
+    form.appendChild(h("div", { class: "field" }, [h("label", { for: "f-title", text: "Topic" }), title]));
+    form.appendChild(h("div", { class: "field" }, [h("label", { for: "f-writer", text: "Writer" }), writer]));
+    form.appendChild(h("div", { class: "field" }, [h("label", { for: "f-photo", text: "Photo (optional)" }), fileIn, prev, rm,
+      h("div", { class: "hint", text: "The photo shows on the article and on its tab." })]));
+    form.appendChild(h("div", { class: "field" }, [h("label", { for: "f-body", text: "Article" }), text,
+      h("div", { class: "hint", text: state.local ? "Saved on this device only in this copy." : "Publishing is free. Your article appears for everyone right away." })]));
+    form.appendChild(h("div", { class: "actions" }, [submit,
+      h("button", { class: "btn", type: "button", onclick: function () { go("list"); } }, ["Cancel"])]));
+    form.appendChild(err);
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var t = title.value.trim(), w = writer.value.trim(), b = text.value.trim();
+      if (!t || !w || !b) { err.textContent = "Please fill in the topic, your name and the article."; return; }
+      if (!db) { err.textContent = "Still connecting. Try again in a moment."; return; }
+      if (busy) { err.textContent = "Your photo is still being prepared. Try again in a moment."; return; }
+      submit.disabled = true; err.textContent = "";
+      try { localStorage.setItem("yw_writer", w); savedWriter = w; } catch (e) {}
+      var ref = db.collection("articles").doc();
+      var saved = photo ? db.doc("photos/" + ref.id).set({ data: photo.full }) : Promise.resolve();
+      saved.then(function () {
+        return ref.set({ title: t, writer: w, body: b, thumb: photo ? photo.thumb : "", authorId: state.myId || "", createdAt: Date.now() });
+      }).then(function () {
+        go("read", ref.id);
+      }, function (e) {
+        submit.disabled = false;
+        err.textContent = (e && e.code === "invalid_argument")
+          ? "You have read-only access here. Ask the page owner for contributor access to write."
+          : (e && e.code === "quota_exceeded") ? "There is no space left to save this. Try a smaller photo or delete an old article."
+          : "Could not publish. Check your connection and try again.";
+      });
+    });
+    return form;
+  }
+
+  function renderSettings() {
+    var box = h("div", { class: "settings" });
+    box.appendChild(h("div", { class: "back" }, [
+      h("button", { class: "btn", type: "button", onclick: function () { go("list"); } }, ["← All articles"])
+    ]));
+    box.appendChild(h("h2", { text: "Settings" }));
+    var fs = h("fieldset", null, [h("legend", { text: "Theme" })]);
+    [["light", "Normal", "White page with black text."], ["dark", "Dark", "Black page with light text."]].forEach(function (o) {
+      var input = h("input", { type: "radio", name: "theme", id: "theme-" + o[0], value: o[0] });
+      input.checked = state.theme === o[0];
+      input.addEventListener("change", function () { if (input.checked) applyTheme(o[0]); });
+      fs.appendChild(h("label", { class: "opt", for: "theme-" + o[0] }, [input, h("span", null, [h("b", { text: o[1] }), h("small", { text: o[2] })])]));
+    });
+    box.appendChild(fs);
+    box.appendChild(h("p", { class: "count", text: "Your theme is remembered on this device." }));
+    return box;
+  }
+
+  function render() {
+    if (state.view !== "read") { stopComments(); }
+    app.textContent = "";
+    var node = state.view === "write" ? renderWrite() : state.view === "read" ? renderRead() : state.view === "settings" ? renderSettings() : renderList();
+    app.appendChild(node);
+  }
+
+  function openKey() {
+    var a = state.articles.filter(function (x) { return x.id === state.openId; })[0];
+    return a ? a.title + "|" + a.body + "|" + a.thumb + "|" + a.writer : "";
+  }
+
+  function attach(d, local) {
+    if (unsubArticles) { unsubArticles(); unsubArticles = null; }
+    stopComments();
+    db = d; state.local = local; state.status = "loading"; state.articles = []; photoCache = {};
+    unsubArticles = d.collection("articles").orderBy("createdAt", "desc").limit(500).onSnapshot(function (snap) {
+      var before = openKey();
+      state.articles = snap.docs.map(function (doc) {
+        var x = doc.data() || {};
+        return { id: doc.id, title: String(x.title || "Untitled"), writer: String(x.writer || "Anonymous"), body: String(x.body || ""), thumb: safeImg(x.thumb) ? x.thumb : "", authorId: x.authorId || "", createdAt: Number(x.createdAt) || 0 };
+      });
+      state.status = "ready";
+      if (state.view === "write" || state.view === "settings") return;
+      if (state.view === "read" && cm.id === state.openId && before === openKey() && before) return;
+      render();
+    }, function () { state.status = "unavailable"; render(); });
+    render();
+  }
+  function useLocal() { state.isAdmin = true; state.myId = null; state.canWrite = null; attach(makeLocal(), true); }
+
+  render();
+
+  async function boot() {
+    var shared = false;
+    var timer = setTimeout(function () { if (!shared) useLocal(); }, 3000);
+    var claude = window.claude;
+    if (!claude || !claude.use) { clearTimeout(timer); return useLocal(); }
+    var got;
+    try { got = await Promise.all([claude.use("db"), claude.use("user")]); } catch (e) { got = [null, null]; }
+    clearTimeout(timer);
+    if (!got[0]) { if (!state.local) useLocal(); return; }
+    var user = got[1];
+    state.isAdmin = false; state.myId = null; state.canWrite = null;
+    if (user) {
+      try { state.myId = await user.id(); } catch (e) {}
+      try { state.isAdmin = await user.canEdit(); } catch (e) {}
+      try { state.canWrite = await user.can("data.write"); } catch (e) {}
+    }
+    shared = true;
+    attach(got[0], false);
+  }
+  boot();
+})();
+</script>
+
+</body></html>
